@@ -93,10 +93,69 @@ namespace winrt::CmdPalKeyboardService::implementation
         };
     }
 
+    void KeyboardListener::SetUseWinKeyAsActivation(bool enabled)
+    {
+        m_useWinKeyAsActivation = enabled;
+        m_winKeyPressedAlone = false;
+        m_winKeyVk = 0;
+    }
+
     LRESULT KeyboardListener::DoLowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
     {
         const auto& keyPressInfo = *reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+        const DWORD vkCode = keyPressInfo.vkCode;
 
+        // Handle Windows key as activation feature
+        if (m_useWinKeyAsActivation)
+        {
+            const bool isWinKey = (vkCode == VK_LWIN || vkCode == VK_RWIN);
+
+            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+            {
+                if (isWinKey)
+                {
+                    // Windows key pressed - track it
+                    m_winKeyPressedAlone = true;
+                    m_winKeyVk = vkCode;
+                }
+                else if (m_winKeyPressedAlone)
+                {
+                    // Another key pressed while Win key is down - this is a Win+X shortcut
+                    m_winKeyPressedAlone = false;
+                    m_winKeyVk = 0;
+                }
+            }
+            else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+            {
+                if (isWinKey && m_winKeyPressedAlone && m_winKeyVk == vkCode)
+                {
+                    // Windows key released alone - activate CmdPal
+                    m_winKeyPressedAlone = false;
+                    m_winKeyVk = 0;
+
+                    // Trigger CmdPal activation with empty id (main activation)
+                    m_processCommandCb(hstring{ L"" });
+
+                    // Send dummy key to prevent Start Menu from activating
+                    INPUT dummyEvent[1] = {};
+                    dummyEvent[0].type = INPUT_KEYBOARD;
+                    dummyEvent[0].ki.wVk = 0xFF;
+                    dummyEvent[0].ki.dwFlags = KEYEVENTF_KEYUP;
+                    SendInput(1, dummyEvent, sizeof(INPUT));
+
+                    // Swallow the key event
+                    return 1;
+                }
+                else if (isWinKey)
+                {
+                    // Reset tracking
+                    m_winKeyPressedAlone = false;
+                    m_winKeyVk = 0;
+                }
+            }
+        }
+
+        // Original hotkey handling logic
         if ((wParam != WM_KEYDOWN) && (wParam != WM_SYSKEYDOWN))
         {
             return CallNextHookEx(NULL, nCode, wParam, lParam);
@@ -107,7 +166,7 @@ namespace winrt::CmdPalKeyboardService::implementation
             .ctrl = static_cast<bool>(GetAsyncKeyState(VK_CONTROL) & 0x8000),
             .shift = static_cast<bool>(GetAsyncKeyState(VK_SHIFT) & 0x8000),
             .alt = static_cast<bool>(GetAsyncKeyState(VK_MENU) & 0x8000),
-            .key = static_cast<unsigned char>(keyPressInfo.vkCode)
+            .key = static_cast<unsigned char>(vkCode)
         };
 
         if (hotkey == Hotkey{})

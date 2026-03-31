@@ -12,5 +12,6 @@ namespace CmdPalKeyboardService
         void ClearHotkey(String id);
         void ClearHotkeys();
         void SetProcessCommand(ProcessCommand processCommand);
+        void SetUseWinKeyAsActivation(Boolean enabled);
     }
 }

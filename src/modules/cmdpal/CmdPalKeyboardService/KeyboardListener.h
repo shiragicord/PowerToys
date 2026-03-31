@@ -39,6 +39,7 @@ namespace winrt::CmdPalKeyboardService::implementation
         void ClearHotkey(hstring const& id);
         void ClearHotkeys();
         void SetProcessCommand(ProcessCommand processCommand);
+        void SetUseWinKeyAsActivation(bool enabled);
 
         static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -56,6 +57,11 @@ namespace winrt::CmdPalKeyboardService::implementation
         std::mutex mutex;
 
         std::function<void(hstring const&)> m_processCommandCb;
+
+        // Windows key as activation feature
+        bool m_useWinKeyAsActivation = false;
+        bool m_winKeyPressedAlone = false;
+        DWORD m_winKeyVk = 0; // Track which Win key was pressed (VK_LWIN or VK_RWIN)
     };
 }
 

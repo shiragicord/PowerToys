@@ -19,6 +19,8 @@ public record SettingsModel
 
     public bool UseLowLevelGlobalHotkey { get; init; }
 
+    public bool UseWinKeyAsActivation { get; init; }
+
     public bool ShowAppDetails { get; init; }
 
     public bool BackspaceGoesBack { get; init; }

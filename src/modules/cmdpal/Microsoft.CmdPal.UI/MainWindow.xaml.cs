@@ -1153,6 +1153,9 @@ public sealed partial class MainWindow : WindowEx,
     {
         UnregisterHotkeys();
 
+        // Configure Windows key as activation
+        _keyboardListener.SetUseWinKeyAsActivation(settings.UseWinKeyAsActivation);
+
         var globalHotkey = settings.Hotkey;
         if (globalHotkey is not null)
         {

@@ -56,6 +56,16 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool UseWinKeyAsActivation
+    {
+        get => _settingsService.Settings.UseWinKeyAsActivation;
+        set
+        {
+            _settingsService.UpdateSettings(s => s with { UseWinKeyAsActivation = value });
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UseWinKeyAsActivation)));
+        }
+    }
+
     public bool AllowExternalReload
     {
         get => _settingsService.Settings.AllowExternalReload;
