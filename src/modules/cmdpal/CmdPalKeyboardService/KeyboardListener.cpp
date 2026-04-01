@@ -136,12 +136,17 @@ namespace winrt::CmdPalKeyboardService::implementation
                     // Trigger CmdPal activation with empty id (main activation)
                     m_processCommandCb(hstring{ L"" });
 
-                    // Send dummy key to prevent Start Menu from activating
-                    INPUT dummyEvent[1] = {};
-                    dummyEvent[0].type = INPUT_KEYBOARD;
-                    dummyEvent[0].ki.wVk = 0xFF;
-                    dummyEvent[0].ki.dwFlags = KEYEVENTF_KEYUP;
-                    SendInput(1, dummyEvent, sizeof(INPUT));
+                    // Send dummy key to prevent Start Menu from activating,
+                    // then explicitly release the Win key to clear system state.
+                    // This prevents subsequent key presses from being interpreted as Win+X shortcuts.
+                    INPUT inputs[2] = {};
+                    inputs[0].type = INPUT_KEYBOARD;
+                    inputs[0].ki.wVk = 0xFF;
+                    inputs[0].ki.dwFlags = KEYEVENTF_KEYUP;
+                    inputs[1].type = INPUT_KEYBOARD;
+                    inputs[1].ki.wVk = static_cast<WORD>(vkCode);
+                    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+                    SendInput(2, inputs, sizeof(INPUT));
 
                     // Swallow the key event
                     return 1;
